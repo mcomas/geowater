@@ -17,6 +17,16 @@ Source: CRAN
 Version: 0.3.1
 Hash: 096699d1ac1cf530acfc646a0c90ee5d
 
+Package: DT
+Source: github
+Version: 0.1.39
+Hash: 63fe1adadfd14907ccde7c834903aff4
+Requires: htmltools, htmlwidgets, magrittr
+GithubRepo: DT
+GithubUsername: rstudio
+GithubRef: master
+GithubSha1: 01b28ee42e1c8e16e599533092f1057c702531b4
+
 Package: R6
 Source: CRAN
 Version: 2.1.1
@@ -32,6 +42,11 @@ Source: CRAN
 Version: 0.1
 Hash: 0afb92b59b02593c70ff8046700ba9d3
 
+Package: curl
+Source: CRAN
+Version: 0.9.3
+Hash: 44fef64a3205c6e327a11a1a721da9b0
+
 Package: digest
 Source: CRAN
 Version: 0.6.8
@@ -43,6 +58,23 @@ Version: 0.4.3
 Hash: 51606df7715ff20e835c66a9af9c4371
 Requires: BH, DBI, R6, Rcpp, assertthat, lazyeval, magrittr
 
+Package: htmltools
+Source: CRAN
+Version: 0.2.6
+Hash: 595e7dea94f5f049dfc1ed739f5161af
+Requires: digest
+
+Package: htmlwidgets
+Source: CRAN
+Version: 0.5
+Hash: 0aa33e8666baac6fcff4e376789b9c2e
+Requires: htmltools, jsonlite, yaml
+
+Package: jsonlite
+Source: CRAN
+Version: 0.9.17
+Hash: d44b8f8c89ff794d6ec8a07dde103d24
+
 Package: lazyeval
 Source: CRAN
 Version: 0.1.10
@@ -51,7 +83,8 @@ Hash: 9679f1ac7f6bc07bc79755f34cd15e1f
 Package: lubridate
 Source: CRAN
 Version: 1.3.3
-Requires: stringr, memoise, plyr
+Hash: bc99e5efa2e943ffa30ac4f4dd6630d1
+Requires: memoise, plyr, stringr
 
 Package: magrittr
 Source: CRAN
@@ -75,6 +108,17 @@ Version: 1.8.3
 Hash: 52c8f33727f85cf27dec392f28d94853
 Requires: Rcpp
 
+Package: rgdal
+Source: CRAN
+Version: 1.0-4
+Hash: cdbf64ec989fbbd69b763c10fc933557
+Requires: sp
+
+Package: sp
+Source: CRAN
+Version: 1.1-1
+Hash: a6f7857b06c83649b8c6a4724b5b9233
+
 Package: stringi
 Source: CRAN
 Version: 0.5-5
@@ -85,3 +129,8 @@ Source: CRAN
 Version: 1.0.0
 Hash: 2676dd5f88890910962b733b0f9540e1
 Requires: magrittr, stringi
+
+Package: yaml
+Source: CRAN
+Version: 2.1.13
+Hash: 4854ccabebc225e8a7309fb4a74980de
