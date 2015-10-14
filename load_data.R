@@ -4,7 +4,7 @@ library(lubridate)
 
 data = read.csv('data/database_Antonella.csv', 
                 sep = ';', stringsAsFactors = F)
-data$id = id(data)
+data$id = 1:NROW(data)
 
 v_year = data$Sample_Date
 for(y in sprintf("%4d", 1981:2015)){
@@ -56,6 +56,7 @@ df.date <- data_frame(id = data$id,
                     isna_num(v_month_5) + isna_num(v_month_6)
                   ) %>% 
   transmute(
+    id = id,
     text = text,
     year = year,
     month = ifelse(v_length == 4, 
@@ -96,10 +97,26 @@ proj4string(data.map) = CRS("+proj=tmerc +lat_0=0 +lon_0=9 +k=0.9996 +x_0=150000
 
 data.map = spTransform(data.map, CRS("+init=epsg:4326")) %>% 
   data.frame %>% select(-optional) %>%
-  setNames(c('id', 'lon', 'lat'))
-df.coord = df.coord %>% left_join(data.map, by='id')
+  setNames(c('id', 'lon', 'lat')) %>% tbl_df
+df.coord = left_join(df.coord, data.map, by='id')
 
+## Composition
+nms = c('id' = 'id',
+        'pH' = 'ph',
+        'Conducibilità_uS_cm_20C_' = 'conduct',
+        'Bicarbonati_mg.L_' = 'HCO3',
+        'Calcio_mg.L_' = 'Ca',
+        'Cloruri_mg.L_'= 'Cl',
+        'Magnesio_mg.L_' = 'Mg',
+        'Potassio_mg.L_' = 'K',
+        'Sodio_mg.L_' = 'Na',
+        'Solfati_mg.L_' = 'SO4')
+df.chem = data %>%
+  select(one_of(names(nms))) %>% setNames(nms) %>% 
+  mutate( 
+    conduct = suppressWarnings(as.numeric(conduct)) ) %>%
+  tbl_df
 
 
 ###
-save(df.date, df.coord, file='data/geowater.RData')
+save(df.date, df.coord, df.chem, file='data/geowater.RData')
