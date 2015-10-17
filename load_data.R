@@ -7,15 +7,14 @@ data = read.csv('data/database_Antonella.csv',
 data$id = 1:NROW(data)
 
 v_year = data$Sample_Date
-for(y in sprintf("%4d", 1981:2015)){
+for(y in sprintf("%4d", 1900:2015)){
   v_year = ifelse( str_detect(v_year, y), y, v_year)
 }
-for(y in sprintf("%4d", 1981:2015)){
+for(y in sprintf("%4d", 1900:2015)){
   v_year = ifelse( str_sub(v_year, -2) == str_sub(y, -2), y, v_year)
 }
 v_year = as.numeric(v_year)
 v_year = ifelse(v_year > 35000, year(as.Date(v_year, origin='1899-12-30')), v_year)
-
 
 
 v_month_1 = data$Sample_Date %>% as.Date(format='%m/%d/%Y') %>% month
@@ -64,21 +63,6 @@ df.date <- data_frame(id = data$id,
                    ifelse(v_length == 2, 
                           v_month_3, 
                           pmin(v_month_2, v_month_4, v_month_5, v_month_6, na.rm=T))))
-
-df.date %>% group_by(text) %>% 
-  summarise(
-    year = first(year),
-    month = first(month),
-    n = n()
-  ) %>% ungroup %>% 
-  arrange(year, month) #%>% View
-
-table(df.date[['year']], useNA='ifany')
-table(df.date[['month']], useNA='ifany')
-
-barplot(table(df.date[['year']]), main = 'Years')
-barplot(table(df.date[['month']]), main = 'Months')
-barplot(table(ifelse(df.date[['month']] %in% 6:8, 'estiu', 'no estiu'), df.date[['year']]), main = 'Months')
 
 ### Coordinates are pulished
 library(rgdal)
