@@ -1,0 +1,133 @@
+---
+title: "Descriptives"
+author: "Marc Comas-Cufí, Antonella Buccianti, Josep Antoni Martín-Fernandez and Glòria Mateu-Figueras"
+date: "18 Oct 2015"
+output: 
+  html_document: 
+    toc: yes
+---
+
+```{r, include=F}
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(compositions)
+options(dplyr.print_min = 5, dplyr.print_max = 30)
+load('data/geowater.RData')
+
+compo = function(.data) .data %>% select(HCO3, Ca, Cl, Mg, K, Na, SO4) %>% subset(apply(., 1, prod) != 0)
+closure = function(.data, k = 100) (k*.data/apply(.data, 1, sum)) %>% round(4) %>% tbl_df
+
+gmean = function(...){
+  .data = data.frame(list(...))
+  apply(.data, 1, prod)^(1/NCOL(.data))
+}
+
+variation_array = function(.data, output='m.v'){
+  vrs = names(.data)
+  bind_cols(.data %>% setNames(sprintf('col.%s', names(.))),
+            .data %>% setNames(sprintf('row.%s', names(.)))) %>%
+    gather(key=row.var, value=row.val, row.HCO3:row.SO4) %>%
+    gather(key=col.var, value=col.val, col.HCO3:col.SO4) %>%
+    group_by(col.var, row.var) %>% summarize(
+  'm' = mean(log(row.val/col.val)),
+  'v' = var(log(row.val/col.val)),
+  'm.v' = sprintf("  %3.1f (%3.1f)", m, v)) %>% 
+    select_('row.var', 'col.var', .dots=output) %>%
+    spread_('col.var', output)
+}
+
+
+balance = function(.data) .data %>% select(HCO3, Ca, Cl, Mg, K, Na, SO4) %>%
+  mutate(
+    b1 = sqrt(4*3/(4+3)) * log(gmean(Ca, Mg, Na, K) / gmean(HCO3, SO4, Cl)),
+    b2 = sqrt(2*2/(2+2)) * log(gmean(Ca, Mg) / gmean(Na, K)),
+    b3 = sqrt(1*1/(1+1)) * log(Ca/Mg),
+    b4 = sqrt(1*1/(1+1)) * log(Na/K),
+    b5 = sqrt(1*2/(1+2)) * log(gmean(HCO3)/gmean(SO4, Cl)),
+    b6 = sqrt(1*1/(1+1)) * log(SO4/Cl) ) %>% select(b1,b2,b3,b4,b5,b6)
+```
+
+# Location
+
+Locations at no more than 15 meters have been considered one unique location.
+
+```{r}
+# By considering only 4 decimal digits we are assuming 15 meters between observations
+data = df.coord %>% 
+  mutate('loc.id' = sprintf('%.4f-%.4f', lon, lat) ) %>%
+  left_join(df.date, by = 'id') %>%
+  left_join(df.chem, by = 'id') %>%
+  mutate(loc.id = ifelse(loc.id == 'NA-NA', NA, loc.id))
+```
+
+## Non-registered measurements
+ 
+```{r}
+data['loc.id'] %>% 
+  is.na %>% 
+  ifelse('Non-registered', 'Registered') %>%
+  table %>% 
+  addmargins
+```
+
+## Measurements at the same location
+
+```{r, echo=F, eval=F}
+ggplot() + 
+  geom_bar(data = data %>% filter(!is.na(loc.id)) %>% 
+             group_by(loc.id) %>% summarise(nloc = n()) %>%
+             group_by(nloc) %>% summarise(n = n()),
+  aes(x = nloc, y = n), stat = 'identity') + theme_classic()
+```
+
+```{r}
+with(data %>% filter(!is.na(loc.id)) %>% count(loc.id), 
+     barplot(table(n), main='Repeated measures', xlab = 'Number of repetitions'))
+```
+
+# Components
+
+## Describing each component
+
+```{r}
+summarise_components = function(.data) .data %>%
+  gather(key=component, value=val) %>%
+  group_by(component) %>%
+  summarise(
+    na = sum(is.na(val)),
+    min = min(val, na.rm=T),
+    q1 = quantile(val, 0.25, na.rm=T),
+    median = median(val, na.rm=T),
+    q3 = quantile(val, 0.75, na.rm=T),
+    max = max(val, na.rm=T) )
+```
+
+ * Raw data
+
+```{r}
+data %>% 
+  select(HCO3, Ca, Cl, Mg, K, Na, SO4) %>% 
+  summarise_components
+```
+
+* Closured data (100%)
+
+```{r}
+data %>% 
+  select(HCO3, Ca, Cl, Mg, K, Na, SO4) %>% closure %>% 
+  summarise_components
+```
+
+Total variance
+
+```{r}
+totalVariance = function(.data) .data %>% compo %>% acomp %>% variation %>% {data.frame('totalVariance' = sum(.))}
+```
+
+```{r}
+(tv.sample <- data %>% group_by(loc.id) %>%
+  do(totalVariance(.)) %>% filter(!is.na(totalVariance)) %>% ungroup %>% arrange(-totalVariance) ) %>% head(20)
+boxplot(tv.sample$totalVariance)
+data %>% subset(loc.id == '11.8952-43.4743') %>% compo %>% closure
+```
