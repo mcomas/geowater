@@ -119,15 +119,32 @@ data %>%
   summarise_components
 ```
 
-Total variance
+## Total variance
 
 ```{r}
-totalVariance = function(.data) .data %>% compo %>% acomp %>% variation %>% {data.frame('totalVariance' = sum(.))}
+totalVariance = function(.data) .data %>% compo %>% acomp %>% variation %>% 
+  {data.frame('totalVariance' = sum(.))}
 ```
+
+For all the observations in each sampling point the total variance was calculated.
 
 ```{r}
 (tv.sample <- data %>% group_by(loc.id) %>%
   do(totalVariance(.)) %>% filter(!is.na(totalVariance)) %>% ungroup %>% arrange(-totalVariance) ) %>% head(20)
-boxplot(tv.sample$totalVariance)
+```
+
+```{r}
+opar = par(mfrow=c(1,2),oma=c(0,0,2,0))
+boxplot(sqrt(tv.sample$totalVariance), main=NULL)
+abline(h=sqrt(tv.sample$totalVariance[is.na(tv.sample$loc.id)]), col=2)
+
+hist(sqrt(tv.sample$totalVariance), main=NULL, xlab='Total var. (square root)')
+abline(v=sqrt(tv.sample$totalVariance[is.na(tv.sample$loc.id)]), col=2)
+title("Total variance distribution for sampling points", outer=TRUE)
+par(opar)
+```
+
+
+```{r}
 data %>% subset(loc.id == '11.8952-43.4743') %>% compo %>% closure
 ```
