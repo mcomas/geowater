@@ -12,7 +12,7 @@ library(dplyr)
 library(ggplot2)
 library(tidyr)
 library(compositions)
-options(dplyr.print_min = 5, dplyr.print_max = 30)
+options(dplyr.print_min = 5, dplyr.print_max = 30, width=100)
 load('data/geowater.RData')
 
 compo = function(.data) .data %>% select(HCO3, Ca, Cl, Mg, K, Na, SO4) %>% subset(apply(., 1, prod) != 0)
@@ -50,19 +50,21 @@ balance = function(.data) .data %>% select(HCO3, Ca, Cl, Mg, K, Na, SO4) %>%
 
 # Location
 
-Locations at no more than 15 meters have been considered one unique location.
+Locations at no more than 15 meters are considered one unique location.
 
 ```{r}
 # By considering only 4 decimal digits we are assuming 15 meters between observations
 data = df.coord %>% 
-  mutate('loc.id' = sprintf('%.4f-%.4f', lon, lat) ) %>%
+  mutate('loc.id' = sprintf('%.4f-%.4f', lat, lon) ) %>%
   left_join(df.date, by = 'id') %>%
   left_join(df.chem, by = 'id') %>%
   mutate(loc.id = ifelse(loc.id == 'NA-NA', NA, loc.id))
 ```
 
 ## Non-registered measurements
- 
+
+The location was no registered in `r sum(is.na(data['loc.id']))` observations.
+
 ```{r}
 data['loc.id'] %>% 
   is.na %>% 
@@ -86,7 +88,44 @@ with(data %>% filter(!is.na(loc.id)) %>% count(loc.id),
      barplot(table(n), main='Repeated measures', xlab = 'Number of repetitions'))
 ```
 
-# Components
+## Total variance in each location
+
+```{r}
+totalVariance = function(.data) .data %>% compo %>% acomp %>% variation %>% 
+  {data.frame('totalVariance' = sum(.))}
+```
+
+For all the observations in each sampling point the total variance was calculated.
+
+```{r}
+(tv.sample <- data %>% group_by(loc.id) %>%
+  do(totalVariance(.)) %>% filter(!is.na(totalVariance)) %>% ungroup %>% arrange(-totalVariance) )
+```
+
+```{r, collapse=TRUE, results='hold'}
+opar = par(mfrow=c(1,2),oma=c(0,0,2,0))
+boxplot(sqrt(tv.sample$totalVariance), main=NULL)
+abline(h=sqrt(tv.sample$totalVariance[is.na(tv.sample$loc.id)]), col=2)
+
+hist(sqrt(tv.sample$totalVariance), main=NULL, xlab='Total var. (square root)')
+abline(v=sqrt(tv.sample$totalVariance[is.na(tv.sample$loc.id)]), col=2)
+title("Total variance distribution for sampling points", outer=TRUE)
+```
+
+```{r, results='asis', echo=F}
+LOC.ID = '43.4743-11.8952'
+lat = strsplit(LOC.ID, '-')[[1]][1]
+lon = strsplit(LOC.ID, '-')[[1]][2]
+cat(sprintf('<p>The location <a href="http://maps.google.com/maps?q=%s,%s">(lat:%s-lon:%s)</a> is the location with higher total variance</p>', 
+        lat, lon, lat, lon))
+```
+
+```{r}
+data %>% subset(loc.id == LOC.ID) %>% select(loc.id, year, month, ph, conduct, HCO3:SO4)
+data %>% subset(loc.id == LOC.ID) %>% compo %>% closure
+```
+
+# Chemical composition
 
 ## Describing each component
 
@@ -119,32 +158,4 @@ data %>%
   summarise_components
 ```
 
-## Total variance
 
-```{r}
-totalVariance = function(.data) .data %>% compo %>% acomp %>% variation %>% 
-  {data.frame('totalVariance' = sum(.))}
-```
-
-For all the observations in each sampling point the total variance was calculated.
-
-```{r}
-(tv.sample <- data %>% group_by(loc.id) %>%
-  do(totalVariance(.)) %>% filter(!is.na(totalVariance)) %>% ungroup %>% arrange(-totalVariance) ) %>% head(20)
-```
-
-```{r}
-opar = par(mfrow=c(1,2),oma=c(0,0,2,0))
-boxplot(sqrt(tv.sample$totalVariance), main=NULL)
-abline(h=sqrt(tv.sample$totalVariance[is.na(tv.sample$loc.id)]), col=2)
-
-hist(sqrt(tv.sample$totalVariance), main=NULL, xlab='Total var. (square root)')
-abline(v=sqrt(tv.sample$totalVariance[is.na(tv.sample$loc.id)]), col=2)
-title("Total variance distribution for sampling points", outer=TRUE)
-par(opar)
-```
-
-
-```{r}
-data %>% subset(loc.id == '11.8952-43.4743') %>% compo %>% closure
-```
