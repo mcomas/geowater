@@ -12,40 +12,12 @@ library(dplyr)
 library(ggplot2)
 library(tidyr)
 library(compositions)
+library(ggmap)
+knitr::opts_chunk$set(comment = "  ")
 options(dplyr.print_min = 5, dplyr.print_max = 30, width=100)
 load('data/geowater.RData')
-
-compo = function(.data) .data %>% select(HCO3, Ca, Cl, Mg, K, Na, SO4) %>% subset(apply(., 1, prod) != 0)
-closure = function(.data, k = 100) (k*.data/apply(.data, 1, sum)) %>% round(4) %>% tbl_df
-
-gmean = function(...){
-  .data = data.frame(list(...))
-  apply(.data, 1, prod)^(1/NCOL(.data))
-}
-
-variation_array = function(.data, output='m.v'){
-  vrs = names(.data)
-  bind_cols(.data %>% setNames(sprintf('col.%s', names(.))),
-            .data %>% setNames(sprintf('row.%s', names(.)))) %>%
-    gather(key=row.var, value=row.val, row.HCO3:row.SO4) %>%
-    gather(key=col.var, value=col.val, col.HCO3:col.SO4) %>%
-    group_by(col.var, row.var) %>% summarize(
-  'm' = mean(log(row.val/col.val)),
-  'v' = var(log(row.val/col.val)),
-  'm.v' = sprintf("  %3.1f (%3.1f)", m, v)) %>% 
-    select_('row.var', 'col.var', .dots=output) %>%
-    spread_('col.var', output)
-}
-
-
-balance = function(.data) .data %>% select(HCO3, Ca, Cl, Mg, K, Na, SO4) %>%
-  mutate(
-    b1 = sqrt(4*3/(4+3)) * log(gmean(Ca, Mg, Na, K) / gmean(HCO3, SO4, Cl)),
-    b2 = sqrt(2*2/(2+2)) * log(gmean(Ca, Mg) / gmean(Na, K)),
-    b3 = sqrt(1*1/(1+1)) * log(Ca/Mg),
-    b4 = sqrt(1*1/(1+1)) * log(Na/K),
-    b5 = sqrt(1*2/(1+2)) * log(gmean(HCO3)/gmean(SO4, Cl)),
-    b6 = sqrt(1*1/(1+1)) * log(SO4/Cl) ) %>% select(b1,b2,b3,b4,b5,b6)
+load('data/geowater_maps.RData')
+source('functions.R')
 ```
 
 # Location
@@ -55,10 +27,10 @@ Locations at no more than 15 meters are considered one unique location.
 ```{r}
 # By considering only 4 decimal digits we are assuming 15 meters between observations
 data = df.coord %>% 
-  mutate('loc.id' = sprintf('%.4f-%.4f', lat, lon) ) %>%
+  mutate('loc.id' = sprintf('%.4f,%.4f', lat, lon) ) %>%
   left_join(df.date, by = 'id') %>%
   left_join(df.chem, by = 'id') %>%
-  mutate(loc.id = ifelse(loc.id == 'NA-NA', NA, loc.id))
+  mutate(loc.id = ifelse(loc.id == 'NA,NA', NA, loc.id))
 ```
 
 ## Non-registered measurements
@@ -74,6 +46,12 @@ data['loc.id'] %>%
 ```
 
 ## Measurements at the same location
+
+There were `r sum(!is.na(data$loc.id))` different observations with registered locatio and there were `r length(table(data$loc.id))` different locations.
+
+```{r}
+data %>% filter(!is.na(loc.id)) %>% {table(.$loc.id)} %>% table %>% addmargins
+```
 
 ```{r, echo=F, eval=F}
 ggplot() + 
@@ -92,14 +70,15 @@ with(data %>% filter(!is.na(loc.id)) %>% count(loc.id),
 
 ```{r}
 totalVariance = function(.data) .data %>% compo %>% acomp %>% variation %>% 
-  {data.frame('totalVariance' = sum(.))}
+{data.frame('totalVariance' = sum(.))}
 ```
 
 For all the observations in each sampling point the total variance was calculated.
 
 ```{r}
 (tv.sample <- data %>% group_by(loc.id) %>%
-  do(totalVariance(.)) %>% filter(!is.na(totalVariance)) %>% ungroup %>% arrange(-totalVariance) )
+  do(totalVariance(.)) %>%
+   left_join(data %>% count(loc.id), by='loc.id') %>% filter(!is.na(totalVariance)) %>% ungroup %>% arrange(-totalVariance) )
 ```
 
 ```{r, collapse=TRUE, results='hold'}
@@ -113,16 +92,111 @@ title("Total variance distribution for sampling points", outer=TRUE)
 ```
 
 ```{r, results='asis', echo=F}
-LOC.ID = '43.4743-11.8952'
-lat = strsplit(LOC.ID, '-')[[1]][1]
-lon = strsplit(LOC.ID, '-')[[1]][2]
-cat(sprintf('<p>The location <a href="http://maps.google.com/maps?q=%s,%s">(lat:%s-lon:%s)</a> is the location with higher total variance</p>', 
+LOC.ID = '43.4743,11.8952'
+lat = strsplit(LOC.ID, ',')[[1]][1]
+lon = strsplit(LOC.ID, ',')[[1]][2]
+cat(sprintf('<p>The location <a href="http://maps.google.com/maps?q=%s,%s">(lat:%s-lon:%s)</a> is the location with higher total variance.</p>', 
         lat, lon, lat, lon))
 ```
 
-```{r}
+```{r, results='hold'}
 data %>% subset(loc.id == LOC.ID) %>% select(loc.id, year, month, ph, conduct, HCO3:SO4)
 data %>% subset(loc.id == LOC.ID) %>% compo %>% closure
+```
+
+ * Other locations (for each location compositiona and its closure is shown):
+
+```{r, results='asis', echo=F}
+LOC.ID = '43.6582,10.5785'
+lat = strsplit(LOC.ID, ',')[[1]][1]
+lon = strsplit(LOC.ID, ',')[[1]][2]
+cat(sprintf('<p>Location <a href="http://maps.google.com/maps?q=%s,%s">(lat:%s-lon:%s)</a>.</p>', 
+        lat, lon, lat, lon))
+```
+
+```{r, results='hold'}
+data %>% subset(loc.id == LOC.ID) %>% select(loc.id, year, month, ph, conduct, HCO3:SO4)
+data %>% subset(loc.id == LOC.ID) %>% compo %>% closure
+```
+
+```{r, results='asis', echo=F}
+LOC.ID = '43.4774,11.8932'
+lat = strsplit(LOC.ID, ',')[[1]][1]
+lon = strsplit(LOC.ID, ',')[[1]][2]
+cat(sprintf('<p>Location <a href="http://maps.google.com/maps?q=%s,%s">(lat:%s-lon:%s)</a>.</p>', 
+        lat, lon, lat, lon))
+```
+
+```{r, results='hold'}
+data %>% subset(loc.id == LOC.ID) %>% select(loc.id, year, month, ph, conduct, HCO3:SO4)
+data %>% subset(loc.id == LOC.ID) %>% compo %>% closure
+```
+
+```{r, results='asis', echo=F}
+LOC.ID = '43.7109,10.7837'
+lat = strsplit(LOC.ID, ',')[[1]][1]
+lon = strsplit(LOC.ID, ',')[[1]][2]
+cat(sprintf('<p>Location <a href="http://maps.google.com/maps?q=%s,%s">(lat:%s-lon:%s)</a>.</p>', 
+        lat, lon, lat, lon))
+```
+
+```{r, results='hold'}
+data %>% subset(loc.id == LOC.ID) %>% select(loc.id, year, month, ph, conduct, HCO3:SO4)
+data %>% subset(loc.id == LOC.ID) %>% compo %>% closure
+```
+
+
+## Sample locations
+
+The locations are plot in quartiles with respect the total variance. The colors are shown with respect the logarithm of this total variance.
+
+```{r, fig.width=8, warning=F}
+xquantile = function(X, K){
+  cut(X, quantile(X, probs = seq(0, 1, length.out = K+1)), include.lowest = T)
+}
+df = data_frame(
+  lat = as.numeric(sapply(strsplit(tv.sample[['loc.id']], ","), function(v) v[1])),
+  lon = as.numeric(sapply(strsplit(tv.sample[['loc.id']], ","), function(v) v[2])),
+  totalVariance = tv.sample[['totalVariance']] ) %>% 
+  filter(totalVariance > 0.01 & !is.na(totalVariance)) %>%
+  mutate(
+    quartiles = xquantile(totalVariance, 4))
+
+ggmap(map_bw) + 
+  geom_point(data = df %>% filter(totalVariance > 0), aes(x=lon, y=lat, col=log(totalVariance)), size=2) +
+  facet_wrap(~quartiles, nrow=2) +
+  scale_colour_gradient(high="red", low='blue')
+```
+
+# Temporal data
+
+## Year distribution
+
+
+```{r, results='hold'}
+ifelse(!is.na(data[['year']]), 'available', 'non-available') %>% table %>% addmargins
+data[['year']] %>% table(useNA = 'ifany')
+```
+
+## Month distribution
+
+```{r, results='hold'}
+ifelse(!is.na(data[['month']]), 'available', 'non-available') %>% table %>% addmargins
+data[['month']] %>% table(useNA = 'ifany')
+```
+
+ * The total Variance
+
+```{r}
+(tv.month <- data %>% group_by(month) %>%
+  do(totalVariance(.)) %>%
+   left_join(data %>% count(month), by='month') %>% filter(!is.na(totalVariance)) %>% ungroup %>% arrange(-totalVariance) )
+```
+
+```{r, fig.width=9, warning=F}
+ggmap(map_bw) + 
+  geom_point(data = data %>% filter(!is.na(month)), aes(x=lon, y=lat), size=2) +
+  facet_wrap(~month, nrow=2)
 ```
 
 # Chemical composition
@@ -156,6 +230,30 @@ data %>%
 data %>% 
   select(HCO3, Ca, Cl, Mg, K, Na, SO4) %>% closure %>% 
   summarise_components
+```
+
+* Closured data by month
+
+```{r}
+df.res = data %>% 
+  select(HCO3, Ca, Cl, Mg, K, Na, SO4) %>% closure %>% 
+  mutate('month' = data[['month']]) %>%
+  gather(key=component, value=val, -month) %>%
+  group_by(month, component) %>%
+  summarise(
+    na = sum(is.na(val)),
+    min = min(val, na.rm=T),
+    q1 = quantile(val, 0.25, na.rm=T),
+    median = median(val, na.rm=T),
+    q3 = quantile(val, 0.75, na.rm=T),
+    max = max(val, na.rm=T) )
+```
+
+```{r, fig.with = 9}
+ggplot() +
+  geom_point(data = df.res, aes(x = as.factor(month), y = median)) +
+  geom_errorbar(data = df.res, aes(x = as.factor(month), ymin = q1, ymax = q3)) +
+  facet_wrap(~component, scales = 'free', nrow = 2) + xlab('Month') + ylab('%')
 ```
 
 
