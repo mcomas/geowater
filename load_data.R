@@ -102,5 +102,11 @@ df.chem = data %>%
   tbl_df
 
 
+df.info = data %>% mutate(
+  src = Fonte_dati, 
+  stat.id = STAZIONE_ID,
+  stat.name = STAZIONE_NOME) %>% select(src, stat.id, stat.name) %>% tbl_df
+
+
 ###
-save(df.date, df.coord, df.chem, file='data/geowater.RData')
+save(df.date, df.coord, df.chem, df.info, file='data/geowater.RData')

@@ -22,6 +22,11 @@ Source: CRAN
 Version: 1.0-3
 Hash: 591b0ebfcabc42753a3ffb2026e12761
 
+Package: Matching
+Source: CRAN
+Version: 4.8-3.4
+Hash: dcec39a31d7fc837bbce151a0297e3b0
+
 Package: R6
 Source: CRAN
 Version: 2.1.1

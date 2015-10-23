@@ -1,0 +1,61 @@
+---
+title: "Recovering data"
+date: "October 23, 2015"
+output: 
+  html_document: 
+    toc: yes
+---
+
+```{r, include=F}
+library(dplyr)
+library(DT)
+library(WriteXLS)
+load('data/geowater.RData')
+```
+
+# Location to recover
+
+Download table: [xls](t_location.xls)
+
+```{r, echo=F}
+(t_location <- bind_cols(df.info, df.coord) %>% 
+  subset(is.na(lat) | is.na(lon)) %>% 
+  group_by(src, stat.id, stat.name) %>% 
+  summarise(n = n() ) %>%
+  ungroup %>%
+  arrange(-n)) %>% datatable
+```
+
+
+# Year to recover
+
+Download table: [xls](t_year.xls)
+
+```{r, echo=F}
+(t_year <- bind_cols(df.info, df.date) %>% 
+  subset(is.na(year)) %>% 
+  group_by(src, stat.id, stat.name) %>% 
+  summarise(n = n() ) %>%
+  ungroup %>%
+  arrange(-n)) %>% datatable
+```
+
+# Month to recover
+
+Download table: [xls](t_month.xls)
+
+```{r, echo=F}
+(t_month <- bind_cols(df.info, df.date) %>% 
+  subset(is.na(month)) %>% 
+  group_by(src, stat.id, stat.name) %>% 
+  summarise(n = n() ) %>%
+  ungroup %>%
+  arrange(-n)) %>% datatable
+```
+
+```{r, include=F}
+WriteXLS('t_location', ExcelFileName = 'www/t_location.xls', SheetNames = 'sheet01')
+WriteXLS('t_year', ExcelFileName = 'www/t_year.xls', SheetNames = 'sheet01')
+WriteXLS('t_month', ExcelFileName = 'www/t_month.xls', SheetNames = 'sheet01')
+```
+
