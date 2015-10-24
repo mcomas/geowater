@@ -1,0 +1,91 @@
+---
+title: "Matched data"
+author: "Marc Comas-Cufí, Antonella Buccianti, Josep Antoni Martín-Fernandez and Glòria Mateu-Figueras"
+output: html_document
+---
+
+```{r, include=F}
+library(Matching)
+library(ggmap)
+library(dplyr)
+library(tidyr)
+load('data/geowater.RData')
+load('data/geowater_maps.RData')
+source('functions.R')
+data = df.coord %>% 
+  mutate('loc.id' = sprintf('%.4f,%.4f', lat, lon) ) %>%
+  left_join(df.date, by = 'id') %>%
+  left_join(df.chem, by = 'id') %>%
+  mutate(loc.id = ifelse(loc.id == 'NA,NA', NA, loc.id)) %>% mutate(
+    summer = ifelse(month == 6 | month == 7 | month == 8, 'summer', 'no summer') ) %>% 
+  subset(!is.na(summer) & !is.na(lat) & !is.na(lon) & HCO3*Ca*Cl*Mg*K*Na*SO4 != 0)
+```
+
+# Matching
+
+We match each summer observation with a non-summer observation taken at same location.
+
+
+```{r}
+set.seed(1)
+mtch = Match(Tr=data$summer == 'summer', X= data %>% dplyr::select(lat, lon), caliper = c(0, 0), replace = F)
+data$match = NA
+data$match[c(mtch$index.treated, mtch$index.control)] = sprintf("%d", rep(1:length(mtch$index.treated), times=2))
+d = data[!is.na(data$match),]
+summary(mtch)
+```
+
+We have the following sample:
+
+```{r}
+df.coda = d %>% mutate(
+    b1 = sqrt(4*3/(4+3)) * log(gmean(Ca, Mg, Na, K) / gmean(HCO3, SO4, Cl)),
+    b2 = sqrt(2*2/(2+2)) * log(gmean(Ca, Mg) / gmean(Na, K)),
+    b3 = sqrt(1*1/(1+1)) * log(Ca/Mg),
+    b4 = sqrt(1*1/(1+1)) * log(Na/K),
+    b5 = sqrt(1*2/(1+2)) * log(gmean(HCO3)/gmean(SO4, Cl)),
+    b6 = sqrt(1*1/(1+1)) * log(SO4/Cl) ) %>%
+  dplyr::select(match, summer, b1,b2,b3,b4,b5,b6)
+df.coda %>% arrange(match)
+```
+
+```{r, fig.width=9, warning=F}
+ggmap(map_bw) + 
+  geom_point(data = d, aes(x=lon, y=lat), size=3) +
+  facet_wrap(~summer, nrow=1)
+```
+
+We calculate the differences between each matched observation (differences in the ilr coordinates).
+
+```{r}
+df.res = df.coda %>%
+  gather(key=component, value=value, -match, -summer) %>% 
+  group_by(match,component) %>%
+  summarise(
+    ind1 = which(summer == 'summer'),
+    ind2 = 3-ind1,
+    value = value[ind1] - value[ind2])
+df.res2 = df.res %>% 
+  dplyr::select(match, component, value) %>%
+  spread(key=component, value=value)
+df.res2 %>% arrange(match)
+```
+
+
+```{r, include=F}
+ggplot(data = df.res) +
+  geom_boxplot(aes(x = 0, y = value))  +
+  facet_wrap(~component, scales = 'free') + 
+  geom_abline(intercept = 0, slope= 0, col = 'red')
+```
+
+```{r}
+source('plot_functions.R')
+library(grid)
+
+X = df.res2 %>% select(-match)
+
+sapply(X, function(x) t.test(x))
+```
+
+
