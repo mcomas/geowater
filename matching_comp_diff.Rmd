@@ -1,0 +1,105 @@
+---
+title: "Differences between components"
+author: "Marc Comas-Cufí, Antonella Buccianti, Josep Antoni Martín-Fernandez and Glòria Mateu-Figueras"
+output: html_document
+---
+
+
+```{r, include=F}
+library(Matching)
+library(ggmap)
+library(dplyr)
+library(tidyr)
+load('data/geowater.RData')
+load('data/geowater_maps.RData')
+source('functions.R')
+data = df.coord %>% 
+  mutate('loc.id' = sprintf('%.4f,%.4f', lat, lon) ) %>%
+  left_join(df.date, by = 'id') %>%
+  left_join(df.chem, by = 'id') %>%
+  mutate(loc.id = ifelse(loc.id == 'NA,NA', NA, loc.id)) %>% mutate(
+    summer = ifelse(month == 6 | month == 7 | month == 8, 'summer', 'no summer') ) %>% 
+  subset(!is.na(summer) & !is.na(lat) & !is.na(lon) & HCO3*Ca*Cl*Mg*K*Na*SO4 != 0)
+```
+
+# Matching
+
+We match each summer observation with a non-summer observation taken at same location.
+
+
+```{r, include=F}
+set.seed(1)
+matching = function(.data, caliper = c(0,0)){
+  mtch = Match(Tr=.data$summer == 'summer', X= .data %>% dplyr::select(lat, lon), caliper = caliper, replace = F)
+  .data$match = NA
+  .data$match[c(mtch$index.treated, mtch$index.control)] = sprintf("%d", rep(1:length(mtch$index.treated), times=2))
+  d = .data[!is.na(.data$match),]
+
+  df.coda = d %>% mutate(
+    b1 = sqrt(4*3/(4+3)) * log(gmean(Ca, Mg, Na, K) / gmean(HCO3, SO4, Cl)),
+    b2 = sqrt(2*2/(2+2)) * log(gmean(Ca, Mg) / gmean(Na, K)),
+    b3 = sqrt(1*1/(1+1)) * log(Ca/Mg),
+    b4 = sqrt(1*1/(1+1)) * log(Na/K),
+    b5 = sqrt(1*2/(1+2)) * log(gmean(HCO3)/gmean(SO4, Cl)),
+    b6 = sqrt(1*1/(1+1)) * log(SO4/Cl) ) %>%
+  dplyr::select(match, summer, b1,b2,b3,b4,b5,b6)
+  
+  df.res = df.coda %>%
+  gather(key=component, value=value, -match, -summer) %>% 
+  group_by(match,component) %>%
+  summarise(
+    ind1 = which(summer == 'summer'),
+    ind2 = 3-ind1,
+    value = value[ind1] - value[ind2])
+  
+  df.res2 = df.res %>% 
+    dplyr::select(match, component, value) %>%
+    spread(key=component, value=value)
+  
+  X = df.res2 %>% select(-match)
+
+  sapply(X, function(x) t.test(x)$p.value)
+}
+earth.dist <- function (long1, lat1, long2, lat2){
+  rad <- pi/180
+  a1 <- lat1 * rad
+  a2 <- long1 * rad
+  b1 <- lat2 * rad
+  b2 <- long2 * rad
+  dlon <- b2 - a2
+  dlat <- b1 - a1
+  a <- (sin(dlat/2))^2 + cos(a1) * cos(b1) * (sin(dlon/2))^2
+  c <- 2 * atan2(sqrt(a), sqrt(1 - a))
+  R <- 6378.145
+  d <- R * c
+  return(d)
+}
+```
+
+
+```{r}
+set.seed(1)
+# Calipers set from 0 to 3 Km
+calipers = seq(0,0.02, length=50)
+
+df = lapply(1:10,
+            function(i) calipers %>% lapply(function(cal) matching(data, c(cal,cal)) %>% 
+                        as.list %>% as.data.frame) %>% 
+  bind_rows %>%
+  mutate( caliper = calipers , it = sprintf('sim%02d', i)) %>%
+  gather(key = component, value = value, -caliper, -it)) %>% bind_rows
+```
+
+
+```{r}
+df = df %>% mutate(
+  distance = earth.dist(0, 0, caliper, caliper)
+)
+ggplot() +
+  geom_line(data = df, aes(x = distance, y = value, col = it)) + 
+  facet_wrap(~component) + 
+  geom_hline(yintercept = 0.05, linetype = 'dotted', col = 'red') +
+  theme_bw() + 
+  theme(legend.position = 'none') + ylab('p-value') + xlab('Distance (Km)')
+```
+
