@@ -68,6 +68,7 @@ Requires: RJSONIO, png
 Package: WriteXLS
 Source: CRAN
 Version: 3.6.1
+Hash: 6936d705f2df14a8c7f5a5eba9b58500
 
 Package: assertthat
 Source: CRAN
@@ -249,11 +250,26 @@ Source: CRAN
 Version: 0.4
 Hash: b08c52dae92a0a11e64a4deea032ec33
 
+Package: mixpack
+Source: github
+Version: 0.1
+Hash: 88760590a2be52f53c300a8d120c1a8d
+Requires: mvtnorm
+GithubRepo: mixpack
+GithubUsername: mcomas
+GithubRef: master
+GithubSha1: a3eb0f2819a2971692525b2fb449cb4db6708f86
+
 Package: munsell
 Source: CRAN
 Version: 0.4.2
 Hash: 72d343a6664778029f49a7ad36de1cab
 Requires: colorspace
+
+Package: mvtnorm
+Source: CRAN
+Version: 1.0-3
+Hash: 3dead1b0de2bb1ce196a43df831f9080
 
 Package: packrat
 Source: CRAN
