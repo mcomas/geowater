@@ -18,7 +18,7 @@ load('data/geowater.RData')
 Download table: [xls](t_location.xls)
 
 ```{r, echo=F}
-(t_location <- bind_cols(df.info, df.coord) %>% 
+(t_location <- bind_cols(df.info, inner_join(df.date, df.coord, by='id')) %>% 
   subset(is.na(lat) | is.na(lon)) %>% 
   group_by(src, stat.id, stat.name) %>% 
   summarise(n = n() ) %>%
@@ -32,10 +32,10 @@ Download table: [xls](t_location.xls)
 Download table: [xls](t_year.xls)
 
 ```{r, echo=F}
-(t_year <- bind_cols(df.info, df.date) %>% 
+(t_year <- bind_cols(df.info, inner_join(df.date, df.coord, by='id')) %>% 
   subset(is.na(year)) %>% 
-  group_by(src, stat.id, stat.name) %>% 
-  summarise(n = n() ) %>%
+   group_by(src, stat.id, stat.name, est.gb, nord.gb, text) %>% 
+  summarise(n = n()) %>%
   ungroup %>%
   arrange(-n)) %>% datatable
 ```
@@ -45,9 +45,9 @@ Download table: [xls](t_year.xls)
 Download table: [xls](t_month.xls)
 
 ```{r, echo=F}
-(t_month <- bind_cols(df.info, df.date) %>% 
+(t_month <- bind_cols(df.info, inner_join(df.date, df.coord, by='id')) %>% 
   subset(is.na(month)) %>% 
-  group_by(src, stat.id, stat.name) %>% 
+  group_by(src, stat.id, stat.name, est.gb, nord.gb, text) %>% 
   summarise(n = n() ) %>%
   ungroup %>%
   arrange(-n)) %>% datatable
