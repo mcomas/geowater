@@ -1,5 +1,6 @@
 library(Rmixmod)
 library(ggmap)
+library(dplyr)
 
 load('data/geowater_dataset.RData')
 load('data/geowater_maps.RData')

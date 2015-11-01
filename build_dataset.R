@@ -30,8 +30,7 @@ data = df.chem %>%
     b3 = sqrt(1*1/(1+1)) * log(Ca/Mg),
     b4 = sqrt(1*1/(1+1)) * log(Na/K),
     b5 = sqrt(1*2/(1+2)) * log(gmean(HCO3)/gmean(SO4, Cl)),
-    b6 = sqrt(1*1/(1+1)) * log(SO4/Cl) ) %>%
-  select(-(HCO3:SO4))
+    b6 = sqrt(1*1/(1+1)) * log(SO4/Cl) )
 
 save(data, file='data/geowater_dataset.RData')
 
