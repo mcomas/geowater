@@ -1,0 +1,69 @@
+---
+title: "Mixture model"
+author: "Marc Comas-Cufí, Antonella Buccianti, Josep Antoni Martín-Fernandez and Glòria Mateu-Figueras"
+output: 
+  html_document: 
+    toc: yes
+---
+
+```{r, include=F}
+library(Rmixmod)
+library(ggmap)
+library(dplyr)
+library(tidyr)
+
+knitr::opts_chunk$set(comment='  ', echo=F)
+load('data/geowater_dataset.RData')
+load('data/geowater_maps.RData')
+load('data/mixture_model.RData')
+source('functions.R')
+source('plot_functions.R')
+options(width=200)
+```
+
+Finite mixture fitted to the data:
+
+```{r}
+summary(m)
+```
+
+```{r}
+data = data %>%
+  mutate(
+    g0 = sprintf('%02d', m@bestResult@partition),
+    post = apply(m@bestResult@proba, 1, max)
+  )
+```
+
+# Location for each cluster
+
+```{r, fig.width=8, fig.height=6, warning=F}
+ggmap(ggmap = map_bw) +
+  geom_point(data = data %>% arrange(post), aes(x=lon, y=lat, col=post), size=3) +
+  facet_wrap(~g0, nrow=3) + 
+  scale_colour_continuous(high = "#132B43", low = "#56B1F7")
+```
+
+# Piper diagram for each cluster
+
+```{r, results='hold', fig.width=5, fig.width=4}
+get_cations_anions = function(.data){
+  d.meq <- .data %>% compo %>% mgL_to_mmol %>% mmol_to_meq
+  list('cations' = d.meq %>% tern_ca %>% closure,
+       'anions'  = d.meq %>% tern_an %>% closure)
+}
+
+figs = lapply(split(data, data$g0), function(.data){
+  d = get_cations_anions(.data)
+  piper_data =  with(bind_cols(d$cations, d$anions), transform_piper_data(Mg=Mg, Ca=Ca, Cl=Cl, SO4=SO4)) %>% tbl_df
+  piper_data$g0 = .data$g0
+  
+  ggplot_piper() + 
+    geom_point(data=piper_data, 
+               aes(x=x,y=y), size=2) + theme(legend.position='none') +
+    ggtitle(sprintf("%s", paste(unique(.data$g0), collapse=', ')))
+})
+for(f in figs){
+  print(f)
+}
+```
