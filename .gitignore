@@ -5,3 +5,5 @@ packrat/lib*/
 packrat/src/
 www/*
 !www/WWW
+data/*
+data/DATA
