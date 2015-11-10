@@ -1,6 +1,6 @@
 ---
 params:
-  merging: prop_coda.norm_9
+  merging: prop_coda.norm_12
 output: html_document
 ---
 
@@ -85,9 +85,9 @@ ggplot() +
   colScale
 ```
 
-```{r fig.width=9, warning=F}
+```{r fig.width=18, out.width='900px', warning=F, dpi=30}
 ggmap(map_bw) + 
-  geom_point(data = data, aes(x = lon, y = lat, col = g0), alpha=0.4) +
+  geom_point(data = data, aes(x = lon, y = lat, col = g0), size=3, alpha=0.4) +
   xlab(NULL) + ylab(NULL) +
   theme(axis.ticks = element_blank(), axis.text = element_blank()) + 
   facet_wrap(~g, nrow=2) + theme(legend.position = 'none') +
@@ -95,7 +95,7 @@ ggmap(map_bw) +
 ```
 
 
-```{r, results='hold', fig.width=5, fig.width=4}
+```{r, results='hold', fig.width=10, fig.width=8, out.width='450px', dpi=20}
 get_cations_anions = function(.data){
   d.meq <- .data %>% compo %>% mgL_to_mmol %>% mmol_to_meq
   list('cations' = d.meq %>% tern_ca %>% closure,
@@ -109,7 +109,7 @@ figs = lapply(split(data, data$g), function(.data){
   
   ggplot_piper() + 
     geom_point(data=piper_data, 
-               aes(x=x,y=y, col=g0), size=2) + theme(legend.position='none') +
+               aes(x=x,y=y, col=g0), size=3) + theme(legend.position='none') +
     ggtitle(sprintf("%s", as.character(unique(.data$g)))) + 
     colScale
 })
