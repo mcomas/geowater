@@ -34,12 +34,12 @@ $(document).ready(function(){
     var omega  = $("#omega").val();
     var lambda = $("#lambda").val();
     var level = $("#level").val();
-    $("#div1").load(sprintf("hierarchical_merging_at_level-%s_%s_%02d.html", omega, lambda, level));
+    $("#div1").html('<p>Loading 3Mb file... be patient</p>').load(sprintf("hierarchical_merging_at_level-%s_%s_%02d.html", omega, lambda, level));
     $("select").change(function(){
       var omega  = $("#omega").val();
       var lambda = $("#lambda").val();
       var level = $("#level").val();
-      $("#div1").load(sprintf("hierarchical_merging_at_level-%s_%s_%02d.html", omega, lambda, level));
+      $("#div1").html('<p>Loading 3Mb file... be patient</p>').load(sprintf("hierarchical_merging_at_level-%s_%s_%02d.html", omega, lambda, level));
     });
 });
 </script> 
