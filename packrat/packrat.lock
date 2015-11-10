@@ -65,6 +65,11 @@ Version: 1.2.0.7
 Hash: 2f5d21dc8b212ee391899e88174c0d48
 Requires: RJSONIO, png
 
+Package: Rmixmod
+Source: CRAN
+Version: 2.0.3
+Requires: Rcpp
+
 Package: WriteXLS
 Source: CRAN
 Version: 3.6.1
@@ -238,6 +243,10 @@ Source: CRAN
 Version: 0.7.7
 Hash: fea2343a1119d61b0cc5c0a950d103a3
 Requires: mime
+
+Package: mclust
+Source: CRAN
+Version: 5.1
 
 Package: memoise
 Source: CRAN

@@ -1,0 +1,87 @@
+<html>
+<head>
+<meta charset="utf-8">
+
+<style>
+/*
+#header.floating {
+    position: fixed;
+    top: 0;
+}
+*/
+/*
+#header {
+    height: 249px;
+    width: 300px;
+    position: fixed;
+    left: 10px;
+    /*right: 300px;*/
+    top: 10px;
+    /*bottom: 0px;*/
+}
+#div1{
+    margin-top: 150px;
+}
+*/
+</style>
+<script src="sprintf.js"></script>
+<script src="jquery.min.js"></script>
+<script language="javascript"> 
+$(document).ready(function(){
+    for(var i=12;i > 2; i--){
+      $('#level').append($('<option>', {value: i}).text(i));
+    }
+    var omega  = $("#omega").val();
+    var lambda = $("#lambda").val();
+    var level = $("#level").val();
+    $("#div1").load(sprintf("hierarchical_merging_at_level-%s_%s_%02d.html", omega, lambda, level));
+    $("select").change(function(){
+      var omega  = $("#omega").val();
+      var lambda = $("#lambda").val();
+      var level = $("#level").val();
+      $("#div1").load(sprintf("hierarchical_merging_at_level-%s_%s_%02d.html", omega, lambda, level));
+    });
+});
+</script> 
+</head>
+
+<body>
+  
+<div id="header">
+<h1 class="title">Hierarchical merging</h1>
+<h4 class="author"><em>Marc Comas-Cufí, Antonella Buccianti, Josep Antoni Martín-Fernandez and Glòria Mateu-Figueras</em></h4>
+</div>
+
+<br />
+<div id="header">
+Omega: 
+<select id="omega">
+  <option value="cnst">Constant weighing</option>
+  <option value="prop">Proportional weighing</option>
+  <option value="dich">Dichotomic weighing</option>
+</select> 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Lambda:
+<select id="lambda">
+  <option value="coda.norm">Aitchison norm</option>
+  <option value="coda">Aitchison distance</option>
+  <option value="demp.mod">DEMP modification</option>
+  <option value="demp">DEMP</option>
+  <option value="entr">Entropy</option>
+  <option value="prop">Posterior probability</option>
+</select>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Level:
+<select id="level">
+</select>
+
+</div>
+
+<hr>
+
+<div id='div1'>
+</div>
+
+
+</body>
+</html>

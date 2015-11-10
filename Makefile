@@ -27,7 +27,7 @@ data/hierarchical_merging-%.RData : hierarchical_merging.R data/mixture_model.RD
 	Rscript -e 'v=strsplit("$*", "_")[[1]]; OMEGA=v[1]; LAMBDA=v[2]; source("$<")'
 
 www/hierarchical_merging_at_level-%.html : hierarchical_merging_at_level.Rmd data/mixture_model.RData $(HIERAR)
-	mkdir $(@F)
+	mkdir -p $(@F)
 	Rscript -e 'rmarkdown::render("$<", output_dir="www", output_file="$(@F)", params = list(merging = "$*"), intermediates_dir = "$(@F)")'
 	rm -r $(@F)
 

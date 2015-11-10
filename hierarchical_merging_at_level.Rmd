@@ -1,8 +1,6 @@
 ---
-title: "Hierarchical merging"
-author: "Marc Comas-Cufí, Antonella Buccianti, Josep Antoni Martín-Fernandez and Glòria Mateu-Figueras"
 params:
-  merging: prop_coda.norm_12
+  merging: prop_coda.norm_9
 output: html_document
 ---
 
@@ -16,6 +14,7 @@ library(ggmap)
 library(dplyr)
 library(tidyr)
 library(mixpack)
+library("RColorBrewer") 
 knitr::opts_chunk$set(comment='  ', echo=F)
 load('data/geowater_dataset.RData')
 load('data/geowater_maps.RData')
@@ -40,14 +39,15 @@ df = m@bestResult@parameters@mean %>% data.frame %>% tbl_df %>%
 df.mean = df %>% group_by(balance) %>% summarise(value = mean(value))
 ```
 
-
-* Level `r LVL`
+* __Omega__ `r OMEGA`
+* __Lambda__ `r LAMBDA`
+* __Level__ `r LVL`
 
 ```{r}
 HP  = hp.mod[[LVL]]
 ```
 
-```{r plot_level, results='hold', fig.width=4.4, fig.height=8, warning=F}
+```{r}
 hp_temp = lapply(HP, function(i) sprintf('%02d', i))
 
 df$g = ''
@@ -61,19 +61,59 @@ lvls = df %>% filter(balance == '(Ca·Mg·Na·K)/(HCO3·SO4·Cl)') %>%
                   arrange(value.m) %>% select(g) %>% .[[1]]
 data$g = factor(cluster_partition(m@bestResult@proba, HP), levels = lvls)
 df$g = factor(df$g, lvls)
+```
 
-ggmap(map_bw) + 
-  geom_point(data = data, aes(x = lon, y = lat, col = g0), alpha=0.4) +
-  xlab(NULL) + ylab(NULL) +
-  theme(axis.ticks = element_blank(), axis.text = element_blank()) + 
-  facet_wrap(~g, ncol=3) + theme(legend.position = 'none')
+
+```{r fig.width=9, fig.height=4, warning=F}
+#Create a custom color scale
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length=n+1)
+  hcl(h=hues, l=65, c=100)[1:n]
+}
+myColors <- gg_color_hue(12)
+names(myColors) <- sort(unique(data$g0))
+colScale <- scale_colour_manual(name = "grp",values = myColors)
 
 ggplot() + 
   geom_point(data=df, 
              aes(x=g, y=value, colour=g0), size=3) +
   geom_hline(data=df.mean, aes(yintercept=value), col='blue') + 
-  facet_wrap(~balance, ncol=1, scale='free') + 
+  facet_wrap(~balance, nrow=2, scale='free') + 
   theme_bw() + theme(legend.position = 'none', 
                      axis.text.x=element_text(angle=-90)) + 
-  scale_x_discrete(breaks=lvls, labels=ifelse(nchar(lvls) > 5, paste0(substr(lvls, 1, 4), '...'), lvls))
+  scale_x_discrete(breaks=lvls, labels=ifelse(nchar(lvls) > 5, paste0(substr(lvls, 1, 4), '...'), lvls)) +
+  colScale
+```
+
+```{r fig.width=9, warning=F}
+ggmap(map_bw) + 
+  geom_point(data = data, aes(x = lon, y = lat, col = g0), alpha=0.4) +
+  xlab(NULL) + ylab(NULL) +
+  theme(axis.ticks = element_blank(), axis.text = element_blank()) + 
+  facet_wrap(~g, nrow=2) + theme(legend.position = 'none') +
+  colScale
+```
+
+
+```{r, results='hold', fig.width=5, fig.width=4}
+get_cations_anions = function(.data){
+  d.meq <- .data %>% compo %>% mgL_to_mmol %>% mmol_to_meq
+  list('cations' = d.meq %>% tern_ca %>% closure,
+       'anions'  = d.meq %>% tern_an %>% closure)
+}
+
+figs = lapply(split(data, data$g), function(.data){
+  d = get_cations_anions(.data)
+  piper_data =  with(bind_cols(d$cations, d$anions), transform_piper_data(Mg=Mg, Ca=Ca, Cl=Cl, SO4=SO4)) %>% tbl_df
+  piper_data$g0 = .data$g0
+  
+  ggplot_piper() + 
+    geom_point(data=piper_data, 
+               aes(x=x,y=y, col=g0), size=2) + theme(legend.position='none') +
+    ggtitle(sprintf("%s", as.character(unique(.data$g)))) + 
+    colScale
+})
+for(f in figs){
+  print(f)
+}
 ```
