@@ -54,9 +54,11 @@ l_omega = list(
 )
 POST = m@bestResult@proba
 POST[POST==0] = .Machine$double.xmin
-hp = get_hierarchical_partition(POST,
-                                omega = l_omega[[OMEGA]],
-                                lambda = l_lambda[[LAMBDA]])
+# hp = get_hierarchical_partition(POST,
+#                                 omega = l_omega[[OMEGA]],
+#                                 lambda = l_lambda[[LAMBDA]])
+hp = get_hierarchical_partition_fast(POST, omega = OMEGA, lambda=LAMBDA)
+hp = lapply(hp, function(hp_lvl) setNames(hp_lvl, sapply(hp_lvl, paste, collapse=',') ) )
 hp.mod = hp
 df = m@bestResult@parameters@mean %>% data.frame %>% tbl_df %>% 
   setNames(balance_nms) %>%
