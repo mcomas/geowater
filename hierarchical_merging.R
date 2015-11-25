@@ -17,9 +17,6 @@ POST = data.frame(m@bestResult@proba) %>% tbl_df
 POST[POST==0] = .Machine$double.xmin
 
 library(mixpack)
-# hp = get_hierarchical_partition(POST,
-#                                 omega = l_omega[[OMEGA]],
-#                                 lambda = l_lambda[[LAMBDA]])
 hp = get_hierarchical_partition_fast(POST %>% data.frame %>% as.matrix, omega = OMEGA, lambda=LAMBDA)
 hp = lapply(hp, function(hp_lvl) setNames(hp_lvl, sapply(hp_lvl, paste, collapse=',') ) )
 

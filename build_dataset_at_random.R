@@ -1,5 +1,3 @@
-if(!exists('SEED')) SEED = 1
-set.seed(SEED)
 library(dplyr)
 library(tidyr)
 
@@ -24,7 +22,7 @@ data = df.chem %>%                                                        # 4804
   summarise(
     lat = first(lat),
     lon = first(lon),
-    value = sample(value, 1)) %>%
+    value = prod(value)^(1/n())) %>%
   spread(key=component, value=value) %>%                                # 2263
   mutate(
     b1 = sqrt(4*3/(4+3)) * log(gmean(Ca, Mg, Na, K) / gmean(HCO3, SO4, Cl)),
@@ -34,7 +32,7 @@ data = df.chem %>%                                                        # 4804
     b5 = sqrt(1*2/(1+2)) * log(gmean(HCO3)/gmean(SO4, Cl)),
     b6 = sqrt(1*1/(1+1)) * log(SO4/Cl) )
 
-save(data, file='data/geowater_dataset.RData')
+#save(data, file=sprintf('data/geowater_dataset_%04d.RData', SEED))
 
 # 
 # 

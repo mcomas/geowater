@@ -1,27 +1,21 @@
 OMEGA = cnst prop dich
 LAMBDA = entr demp demp.mod coda coda.norm prop
-LVL = 2 3 4 5 6 7 8 9 10 11 12
-HIERAR = $(foreach omega,$(OMEGA),$(foreach lambda,$(LAMBDA), $(shell printf 'data/hierarchical_merging-%s_%s.RData' $(omega) $(lambda))))
-DATA = data/geowater.RData data/geowater_maps.RData data/geowater_dataset.RData \
-       data/mixture_model.RData data/hierarchical_merging-prop_coda.norm.RData \
-       $(HIERAR) \
-       $(foreach omega,$(OMEGA),$(foreach lambda,$(LAMBDA),$(foreach lvl,$(LVL),$(shell printf 'www/hierarchical_merging_at_level-%s_%s_%02d.html' $(omega) $(lambda) $(lvl)))))
-HTML = www/descriptives.html www/recovering.html www/matching_diff.html \
-       www/mixture_model.html www/hierarchical_merging.html
+SEED = 0 1 2 3 4 5 6 7 8 9 \
+       10 11 12 13 14 15 16 17 18 19 \
+       20 21 22 23 24 25 26 27 28 29 \
+       30 31 32 33 34 35 36 37 38 39 \
+       40 41 42 43 44 45 46 47 48 49
+DATA = $(foreach seed,$(SEED),$(shell printf 'data/geowater_dataset_%04d.RData' $(seed))) \
+       $(foreach seed,$(SEED),$(shell printf 'data/mixture_model_%04d.RData' $(seed)))
 
-all: $(DATA) $(HTML)
+all: $(DATA)
 
-data/geowater.RData : load_data.R data/database_Antonella.csv
-	Rscript $<
 
-data/geowater_maps.RData : save_map.R data/geowater.RData
-	Rscript $<
+data/geowater_dataset_%.RData : build_dataset_at_random.R data/geowater.RData
+	Rscript -e 'SEED = $*; source("$<"); save(data, file="$@")'
 
-data/geowater_dataset.RData : build_dataset.R data/geowater.RData
-	Rscript $<
-
-data/mixture_model.RData : mixture_model.R data/geowater_dataset.RData
-	Rscript -e 'load("data/geowater_dataset.RData"); source("$<"); save(m, file="$@")'
+data/mixture_model_%.RData : mixture_model.R data/geowater_dataset_%.RData
+	Rscript -e 'load("data/geowater_dataset_$*.RData"); source("$<"); save(m, file="$@")'
 
 data/hierarchical_merging-%.RData : hierarchical_merging.R data/mixture_model.RData
 	Rscript -e 'v=strsplit("$*", "_")[[1]]; OMEGA=v[1]; LAMBDA=v[2]; source("$<")'
