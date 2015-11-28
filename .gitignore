@@ -1,10 +1,6 @@
 .Rproj.user
 .Rhistory
 .RData
+data
 packrat/lib*/
 packrat/src/
-www/*
-!www/WWW
-!www/hierarchical_merging.html
-data/*
-data/DATA

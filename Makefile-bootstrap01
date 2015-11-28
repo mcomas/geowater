@@ -6,10 +6,13 @@ SEED = 0 1 2 3 4 5 6 7 8 9 \
        30 31 32 33 34 35 36 37 38 39 \
        40 41 42 43 44 45 46 47 48 49
 DATA = $(foreach seed,$(SEED),$(shell printf 'data/geowater_dataset_%04d.RData' $(seed))) \
-       $(foreach seed,$(SEED),$(shell printf 'data/mixture_model_%04d.RData' $(seed)))
+       $(foreach seed,$(SEED),$(shell printf 'data/mixture_model_%04d.RData' $(seed))) \
+       $(foreach seed,$(SEED),$(shell printf 'data/hierarchical_merging-prop_coda.norm_%04d.RData' $(seed)))
 
 all: $(DATA)
 
+data/geowater.RData : Makefile
+	$(MAKE) $@
 
 data/geowater_dataset_%.RData : build_dataset_at_random.R data/geowater.RData
 	Rscript -e 'SEED = $*; source("$<"); save(data, file="$@")'
@@ -17,10 +20,10 @@ data/geowater_dataset_%.RData : build_dataset_at_random.R data/geowater.RData
 data/mixture_model_%.RData : mixture_model.R data/geowater_dataset_%.RData
 	Rscript -e 'load("data/geowater_dataset_$*.RData"); source("$<"); save(m, file="$@")'
 
-data/hierarchical_merging-%.RData : hierarchical_merging.R data/mixture_model.RData
-	Rscript -e 'v=strsplit("$*", "_")[[1]]; OMEGA=v[1]; LAMBDA=v[2]; source("$<")'
+data/hierarchical_merging-prop_coda.norm_%.RData : hierarchical_merging.R data/mixture_model_%.RData
+	Rscript -e 'v=strsplit("$*", "_")[[1]]; OMEGA=v[1]; LAMBDA=v[2]; load("data/geowater_dataset_$*.RData"); load("data/mixture_model_$*.RData"); source("$<"); save(hp, file="$@")'
 
-www/hierarchical_merging_at_level-%.html : hierarchical_merging_at_level.Rmd data/mixture_model.RData $(HIERAR)
+www/hierarchical_merging_at_level-prop_coda.norm_%.html : hierarchical_merging_at_level.Rmd data/mixture_model_%.RData data/geowater_dataset_%.RData $(HIERAR)
 	mkdir -p $(@F)
 	Rscript -e 'rmarkdown::render("$<", output_dir="www", output_file="$(@F)", params = list(merging = "$*"), intermediates_dir = "$(@F)")'
 	rm -r $(@F)

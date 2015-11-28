@@ -23,8 +23,8 @@ data/geowater_dataset.RData : build_dataset.R data/geowater.RData
 data/mixture_model.RData : mixture_model.R data/geowater_dataset.RData
 	Rscript -e 'load("data/geowater_dataset.RData"); source("$<"); save(m, file="$@")'
 
-data/hierarchical_merging-%.RData : hierarchical_merging.R data/mixture_model.RData
-	Rscript -e 'v=strsplit("$*", "_")[[1]]; OMEGA=v[1]; LAMBDA=v[2]; source("$<")'
+data/hierarchical_merging-%.RData : hierarchical_merging.R data/mixture_model.RData data/geowater_dataset.RData
+	Rscript -e 'v=strsplit("$*", "_")[[1]]; OMEGA=v[1]; LAMBDA=v[2]; load("data/geowater_dataset.RData"); load("data/mixture_model.RData"); source("$<"); save(hp, file="$@")'
 
 www/hierarchical_merging_at_level-%.html : hierarchical_merging_at_level.Rmd data/mixture_model.RData $(HIERAR)
 	mkdir -p $(@F)

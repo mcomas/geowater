@@ -3,8 +3,8 @@ if(!exists('LAMBDA')) LAMBDA = 'coda.norm'
 
 library(dplyr)
 
-load('data/geowater_dataset.RData')
-load('data/mixture_model.RData')
+# load('data/geowater_dataset.RData')
+# load('data/mixture_model.RData')
 
 data = data %>%
   mutate(
@@ -20,4 +20,4 @@ library(mixpack)
 hp = get_hierarchical_partition_fast(POST %>% data.frame %>% as.matrix, omega = OMEGA, lambda=LAMBDA)
 hp = lapply(hp, function(hp_lvl) setNames(hp_lvl, sapply(hp_lvl, paste, collapse=',') ) )
 
-save(hp, file=sprintf('data/hierarchical_merging-%s_%s.RData', OMEGA, LAMBDA))
+#save(hp, file=sprintf('data/hierarchical_merging-%s_%s.RData', OMEGA, LAMBDA))
