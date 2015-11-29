@@ -21,7 +21,7 @@ data/mixture_model_%.RData : mixture_model.R data/geowater_dataset_%.RData
 	Rscript -e 'load("data/geowater_dataset_$*.RData"); source("$<"); save(m, file="$@")'
 
 data/hierarchical_merging-prop_coda.norm_%.RData : hierarchical_merging.R data/mixture_model_%.RData
-	Rscript -e 'v=strsplit("$*", "_")[[1]]; OMEGA=v[1]; LAMBDA=v[2]; load("data/geowater_dataset_$*.RData"); load("data/mixture_model_$*.RData"); source("$<"); save(hp, file="$@")'
+	Rscript -e 'v=strsplit("prop_coda.norm", "_")[[1]]; OMEGA=v[1]; LAMBDA=v[2]; load("data/geowater_dataset_$*.RData"); load("data/mixture_model_$*.RData"); source("$<"); save(hp, file="$@")'
 
 www/hierarchical_merging_at_level-prop_coda.norm_%.html : hierarchical_merging_at_level.Rmd data/mixture_model_%.RData data/geowater_dataset_%.RData $(HIERAR)
 	mkdir -p $(@F)
