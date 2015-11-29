@@ -11,6 +11,7 @@ library(dplyr)
 library(tidyr)
 load('data/geowater.RData')
 load('data/geowater_maps.RData')
+knitr::opts_chunk$set(comment = "  ", echo=F)
 source('functions.R')
 data = df.coord %>% 
   mutate('loc.id' = sprintf('%.4f,%.4f', lat, lon) ) %>%

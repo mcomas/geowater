@@ -2,5 +2,11 @@
 .Rhistory
 .RData
 data
+*.html
 packrat/lib*/
 packrat/src/
+www/*
+!www/sprintf.js
+!www/jquery.min.js
+!www/index.html
+!www/hierarchical_merging.html

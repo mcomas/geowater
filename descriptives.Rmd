@@ -13,7 +13,7 @@ library(ggplot2)
 library(tidyr)
 library(compositions)
 library(ggmap)
-knitr::opts_chunk$set(comment = "  ")
+knitr::opts_chunk$set(comment = "  ", echo=F)
 options(dplyr.print_min = 5, dplyr.print_max = 30, width=100)
 load('data/geowater.RData')
 load('data/geowater_maps.RData')
@@ -22,7 +22,7 @@ source('functions.R')
 
 # Location
 
-Locations at no more than 15 meters are considered one unique location.
+Locations at no more than 15 meters are considered one unique location (same 4 decimals in latitude and longitude).
 
 ```{r}
 # By considering only 4 decimal digits we are assuming 15 meters between observations
@@ -35,7 +35,8 @@ data = df.coord %>%
 
 ## Non-registered measurements
 
-The location was no registered in `r sum(is.na(data['loc.id']))` observations.
+ * There were `r sum(!is.na(data$loc.id))` different observations with registered location.
+ * There were `r sum(is.na(data['loc.id']))` different observations with no-registered location.
 
 ```{r}
 data['loc.id'] %>% 
@@ -46,8 +47,9 @@ data['loc.id'] %>%
 ```
 
 ## Measurements at the same location
-
-There were `r sum(!is.na(data$loc.id))` different observations with registered locatio and there were `r length(table(data$loc.id))` different locations.
+ 
+ * There were `r length(table(data$loc.id))` different locations.
+ * There were `r sum(table(data$loc.id) == 1)` locations with a single measurrement, the other locations had some repeated measure.
 
 ```{r}
 data %>% filter(!is.na(loc.id)) %>% {table(.$loc.id)} %>% table %>% addmargins
@@ -73,13 +75,15 @@ totalVariance = function(.data) .data %>% compo %>% acomp %>% variation %>%
 {data.frame('totalVariance' = sum(.))}
 ```
 
-For all the observations in each sampling point the total variance was calculated.
+For observations coming from the same well the total variance of chemical composition was calculated.
 
 ```{r}
 (tv.sample <- data %>% group_by(loc.id) %>%
   do(totalVariance(.)) %>%
    left_join(data %>% count(loc.id), by='loc.id') %>% filter(!is.na(totalVariance)) %>% ungroup %>% arrange(-totalVariance) )
 ```
+
+The calculated total variance are represented and compared to the global total variance (red line). 
 
 ```{r, collapse=TRUE, results='hold'}
 opar = par(mfrow=c(1,2),oma=c(0,0,2,0))
@@ -90,6 +94,8 @@ hist(sqrt(tv.sample$totalVariance), main=NULL, xlab='Total var. (square root)')
 abline(v=sqrt(tv.sample$totalVariance[is.na(tv.sample$loc.id)]), col=2)
 title("Total variance distribution for sampling points", outer=TRUE)
 ```
+
+> In the plot some wells have more variability than the observed within all the sample. Bellow the three wells with higher total variance are shown:
 
 ```{r, results='asis', echo=F}
 LOC.ID = '43.4743,11.8952'
@@ -172,7 +178,9 @@ ggmap(map_bw) +
 
 ## Year distribution
 
-
+ * There were `r sum(!is.na(data[['year']]))` different observations with year registered.
+ * There were `r sum(is.na(data[['year']]))` different observations with year no-registered.
+ 
 ```{r, results='hold'}
 ifelse(!is.na(data[['year']]), 'available', 'non-available') %>% table %>% addmargins
 data[['year']] %>% table(useNA = 'ifany')
@@ -180,18 +188,23 @@ data[['year']] %>% table(useNA = 'ifany')
 
 ## Month distribution
 
+ * There were `r sum(!is.na(data[['month']]))` different observations with year registered.
+ * There were `r sum(is.na(data[['month']]))` different observations with year no-registered.
+ 
 ```{r, results='hold'}
 ifelse(!is.na(data[['month']]), 'available', 'non-available') %>% table %>% addmargins
 data[['month']] %>% table(useNA = 'ifany')
 ```
 
- * The total Variance
+ * The total variance
 
 ```{r}
 (tv.month <- data %>% group_by(month) %>%
   do(totalVariance(.)) %>%
    left_join(data %>% count(month), by='month') %>% filter(!is.na(totalVariance)) %>% ungroup %>% arrange(-totalVariance) )
 ```
+
+ * Location with respect month
 
 ```{r, fig.width=9, warning=F}
 ggmap(map_bw) + 
@@ -238,22 +251,30 @@ data %>%
 df.res = data %>% 
   select(HCO3, Ca, Cl, Mg, K, Na, SO4) %>% closure %>% 
   mutate('month' = data[['month']]) %>%
-  gather(key=component, value=val, -month) %>%
-  group_by(month, component) %>%
-  summarise(
-    na = sum(is.na(val)),
-    min = min(val, na.rm=T),
-    q1 = quantile(val, 0.25, na.rm=T),
-    median = median(val, na.rm=T),
-    q3 = quantile(val, 0.75, na.rm=T),
-    max = max(val, na.rm=T) )
+  gather(key=component, value=val, -month)
+#   group_by(month, component) %>%
+#   summarise(
+#     na = sum(is.na(val)),
+#     min = min(val, na.rm=T),
+#     q1 = quantile(val, 0.25, na.rm=T),
+#     median = median(val, na.rm=T),
+#     q3 = quantile(val, 0.75, na.rm=T),
+#     max = max(val, na.rm=T) )
 ```
 
-```{r, fig.with = 9}
+Variability of closured data by components and months (NA not registered month)
+
+```{r, fig.width = 10, fig.height=6, warning=F}
 ggplot() +
-  geom_point(data = df.res, aes(x = as.factor(month), y = median)) +
-  geom_errorbar(data = df.res, aes(x = as.factor(month), ymin = q1, ymax = q3)) +
-  facet_wrap(~component, scales = 'free', nrow = 2) + xlab('Month') + ylab('%')
+  geom_boxplot(data = df.res, aes(x = as.factor(month), y = val)) +
+  facet_wrap(~component, scales = 'free', nrow = 3) + xlab('Month') + ylab('%') +
+  theme_bw()
+
+# ggplot() +
+#   geom_point(data = df.res, aes(x = as.factor(month), y = median)) +
+#   geom_errorbar(data = df.res, aes(x = as.factor(month), ymin = q1, ymax = q3)) +
+#   facet_wrap(~component, scales = 'free', nrow = 3) + xlab('Month') + ylab('%') +
+#   theme_bw()
 ```
 
 

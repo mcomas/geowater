@@ -6,8 +6,8 @@ DATA = data/geowater.RData data/geowater_maps.RData data/geowater_dataset.RData 
        data/mixture_model.RData data/hierarchical_merging-prop_coda.norm.RData \
        $(HIERAR) \
        $(foreach omega,$(OMEGA),$(foreach lambda,$(LAMBDA),$(foreach lvl,$(LVL),$(shell printf 'www/hierarchical_merging_at_level-%s_%s_%02d.html' $(omega) $(lambda) $(lvl)))))
-HTML = www/descriptives.html www/recovering.html www/matching_diff.html \
-       www/mixture_model.html www/hierarchical_merging.html
+HTML = www/descriptives.html www/recovering.html www/matched.html www/matched2.html www/matching_diff.html \
+       www/mixture_model.html
 
 all: $(DATA) $(HTML)
 
@@ -35,6 +35,12 @@ www/descriptives.html : descriptives.Rmd data/geowater.RData data/geowater_maps.
 	Rscript -e 'rmarkdown::render("$<", output_file="$@")'
 
 www/recovering.html : recovering.Rmd data/geowater.RData
+	Rscript -e 'rmarkdown::render("$<", output_file="$@")'
+
+www/matched.html : matched.Rmd data/geowater.RData data/geowater_maps.RData
+	Rscript -e 'rmarkdown::render("$<", output_file="$@")'
+
+www/matched2.html : matched2.Rmd data/geowater.RData data/geowater_maps.RData
 	Rscript -e 'rmarkdown::render("$<", output_file="$@")'
 
 www/matching_diff.html : matching_diff.Rmd data/geowater.RData data/geowater_maps.RData

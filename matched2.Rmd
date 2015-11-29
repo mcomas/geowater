@@ -11,6 +11,7 @@ library(dplyr)
 library(tidyr)
 load('data/geowater.RData')
 load('data/geowater_maps.RData')
+knitr::opts_chunk$set(comment = "  ", echo=F)
 source('functions.R')
 data = df.coord %>% 
   mutate('loc.id' = sprintf('%.4f,%.4f', lat, lon) ) %>%
@@ -37,7 +38,7 @@ summary(mtch)
 
 We have the following sample:
 
-```{r}
+```{r, echo=T}
 df.coda = d %>% mutate(
     b1 = sqrt(4*3/(4+3)) * log(gmean(Ca, Mg, Na, K) / gmean(HCO3, SO4, Cl)),
     b2 = sqrt(2*2/(2+2)) * log(gmean(Ca, Mg) / gmean(Na, K)),
