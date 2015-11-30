@@ -81,17 +81,20 @@ For observations coming from the same well the total variance of chemical compos
 (tv.sample <- data %>% group_by(loc.id) %>%
   do(totalVariance(.)) %>%
    left_join(data %>% count(loc.id), by='loc.id') %>% filter(!is.na(totalVariance)) %>% ungroup %>% arrange(-totalVariance) )
+totVar = totalVariance(data)
 ```
 
-The calculated total variance are represented and compared to the global total variance (red line). 
+The calculated total variance are represented and compared to total variance  of measurements without location (red line). 
 
 ```{r, collapse=TRUE, results='hold'}
 opar = par(mfrow=c(1,2),oma=c(0,0,2,0))
 boxplot(sqrt(tv.sample$totalVariance), main=NULL)
 abline(h=sqrt(tv.sample$totalVariance[is.na(tv.sample$loc.id)]), col=2)
+abline(h=sqrt(totVar), col=3)
 
 hist(sqrt(tv.sample$totalVariance), main=NULL, xlab='Total var. (square root)')
 abline(v=sqrt(tv.sample$totalVariance[is.na(tv.sample$loc.id)]), col=2)
+abline(v=sqrt(totVar), col=3)
 title("Total variance distribution for sampling points", outer=TRUE)
 ```
 
