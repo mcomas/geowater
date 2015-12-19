@@ -84,7 +84,7 @@ For observations coming from the same well the total variance of chemical compos
 totVar = totalVariance(data)
 ```
 
-The calculated total variance are represented and compared to total variance  of measurements without location (red line). 
+The calculated total variance are represented and compared to total variance  of measurements without location (red line) and the overall total Variance (green line). 
 
 ```{r, collapse=TRUE, results='hold'}
 opar = par(mfrow=c(1,2),oma=c(0,0,2,0))

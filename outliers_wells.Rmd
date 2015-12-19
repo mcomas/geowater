@@ -1,0 +1,78 @@
+---
+title: "Outliers: within wells variation"
+author: "Marc Comas-Cufí, Antonella Buccianti, Josep Antoni Martín-Fernandez and Glòria Mateu-Figueras"
+date: "19 Dec 2015"
+output: 
+  html_document: 
+    toc: yes
+---
+
+```{r, include=F}
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(compositions)
+library(ggmap)
+knitr::opts_chunk$set(comment = "  ", echo=F)
+options(dplyr.print_min = 5, dplyr.print_max = 30, width=100)
+load('data/geowater.RData')
+load('data/geowater_maps.RData')
+source('functions.R')
+```
+
+# Outliers
+
+```{r}
+# By considering only 4 decimal digits we are assuming 15 meters between observations
+data = df.coord %>% 
+  mutate('loc.id' = sprintf('%.4f,%.4f', lat, lon) ) %>%
+  left_join(df.date, by = 'id') %>%
+  left_join(df.chem, by = 'id') %>%
+  mutate(loc.id = ifelse(loc.id == 'NA,NA', NA, loc.id))
+```
+
+```{r}
+totalVariance = function(.data) .data %>% compo %>% acomp %>% variation %>% 
+{data.frame('totalVariance' = sum(.))}
+```
+
+```{r}
+tv.sample <- data %>% group_by(loc.id) %>%
+  do(totalVariance(.)) %>%
+   left_join(data %>% count(loc.id), by='loc.id') %>% filter(!is.na(totalVariance)) %>% ungroup %>% arrange(-totalVariance)
+totVar = totalVariance(data)
+```
+
+```{r}
+boxplot(sqrt(tv.sample$totalVariance), main='Total variance by well', horizontal = T)
+abline(v=sqrt(tv.sample$totalVariance[is.na(tv.sample$loc.id)]), col=2)
+abline(v=sqrt(totVar), col=3)
+legend('topleft', legend=c('No location', 'Over all sample'), bty='n', lty=1, col=2:3)
+```
+
+```{r}
+tv.sample
+```
+
+```{r, results='asis', echo=F}
+print_location = function(LOC.ID, ID){
+
+  cat(sprintf('## %03d.- Location %s (totalVariance = %f)\n\n', ID, LOC.ID, subset(tv.sample, loc.id == LOC.ID)[['totalVariance']]))
+  
+  lat = strsplit(LOC.ID, ',')[[1]][1]
+  lon = strsplit(LOC.ID, ',')[[1]][2]
+  cat(sprintf('<p>Location <a href="http://maps.google.com/maps?q=%s,%s">(lat:%s-lon:%s)</a>.</p>', 
+          lat, lon, lat, lon))
+  
+  cat('\n\n```\n')
+  print(data %>% subset(loc.id == LOC.ID) %>% select(loc.id, year, month, ph, conduct, HCO3:SO4))
+  print(data %>% subset(loc.id == LOC.ID) %>% compo %>% closure)
+  cat('```\n\n' )
+}
+ID = 0
+for(LOC.ID in subset(tv.sample, n > 1)[['loc.id']]){
+  ID = ID + 1
+  print_location(LOC.ID, ID)
+}
+```
+

@@ -1,0 +1,78 @@
+---
+title: "Outliers: by measurement"
+author: "Marc Comas-Cufí, Antonella Buccianti, Josep Antoni Martín-Fernandez and Glòria Mateu-Figueras"
+date: "19 Dec 2015"
+output: 
+  html_document: 
+    toc: yes
+---
+
+```{r, include=F}
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(compositions)
+library(ggmap)
+knitr::opts_chunk$set(comment = "  ", echo=F)
+options(dplyr.print_min = 5, dplyr.print_max = 30, width=100)
+load('data/geowater.RData')
+load('data/geowater_maps.RData')
+source('functions.R')
+```
+
+# Outliers
+
+```{r}
+# By considering only 4 decimal digits we are assuming 15 meters between observations
+data = df.coord %>% 
+  mutate('loc.id' = sprintf('%.4f,%.4f', lat, lon) ) %>%
+  left_join(df.date, by = 'id') %>%
+  left_join(df.chem, by = 'id') %>%
+  mutate(loc.id = ifelse(loc.id == 'NA,NA', NA, loc.id))
+```
+
+Overall sample mean:
+
+```{r}
+X = balance(data %>% compo)
+(X.mean <- apply(X, 2, mean))
+X.cov = cov(X)
+data = data %>% mutate(
+  mah = mahalanobis(balance(data), center = X.mean, cov = X.cov)) %>% arrange(-mah)
+```
+
+
+```{r}
+boxplot(sqrt(data$mah), main='Mahalanobis distance to the center (sqrt)', horizontal = T)
+```
+
+```{r}
+data %>% select(loc.id, Ca:SO4, mah)
+```
+
+```{r, results='asis', echo=F}
+print_location = function(SAMPLE.ID, ID){
+  LOC.ID = subset(data, id == SAMPLE.ID)[['loc.id']]
+  cat(sprintf('## %03d.- Sample located at %s (mah. = %f)\n\n', ID, LOC.ID, subset(data, id == SAMPLE.ID)[['mah']]))
+  
+  if(!is.na(LOC.ID)){
+    lat = strsplit(LOC.ID, ',')[[1]][1]
+    lon = strsplit(LOC.ID, ',')[[1]][2]
+    cat(sprintf('<p>Location <a href="http://maps.google.com/maps?q=%s,%s">(lat:%s-lon:%s)</a>.</p>', 
+            lat, lon, lat, lon))  
+  }else{
+    cat('<p>Location not-available</p>\n')
+  }
+  
+  cat('\n\n```\n')
+  print(data %>% subset(id == SAMPLE.ID) %>% select(loc.id, year, month, ph, conduct, HCO3:SO4))
+  print(data %>% subset(id == SAMPLE.ID) %>% compo %>% closure)
+  cat('```\n\n' )
+}
+ID = 0
+for(SAMPLE.ID in data[['id']][1:100]){
+  ID = ID + 1
+  print_location(SAMPLE.ID, ID)
+}
+```
+
