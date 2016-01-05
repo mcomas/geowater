@@ -1,0 +1,73 @@
+---
+title: "Stationarity"
+author: "Marc Comas-Cufí, Antonella Buccianti, Josep Antoni Martín-Fernandez and Glòria Mateu-Figueras"
+date: "5 Jan 2016"
+output: html_document
+---
+
+```{r, include=FALSE}
+YLIMIT = 1990
+library(dplyr)
+library(tidyr)
+load('data/geowater.RData')
+source('functions.R')
+data = df.coord %>% 
+  mutate('loc.id' = sprintf('%.4f,%.4f', lat, lon) ) %>%
+  left_join(df.date, by = 'id') %>%
+  left_join(df.chem, by = 'id') %>%
+  mutate(
+    loc.id = ifelse(loc.id == 'NA,NA', NA, loc.id),
+    summer = ifelse(is.na(month), 'Non available', ifelse(month == 6 | month == 7 | month == 8, 'summer', 'no summer')) ) %>% 
+  subset(HCO3*Ca*Cl*Mg*K*Na*SO4 != 0)
+
+d = bind_cols(data, balance(data)) %>%
+  dplyr::select(year, summer, b1:b6) %>%
+  gather(key=balance,value=value,b1:b6)
+
+d.sum.year = d %>% 
+  group_by(year, balance) %>%
+  summarise(
+    x = sum(value),
+    x2 = sum(value^2),
+    n = n())
+
+d.global = d.sum.year %>% 
+  subset(year >= YLIMIT) %>%
+  group_by(balance) %>%
+  summarise(mean = sum(x)/sum(n))
+
+d.year = d.sum.year %>% 
+  subset(year >= YLIMIT) %>%
+  mutate(
+    mean = x/n,
+    var = 1/(n-1) * (x2 - 1/n * x^2),
+    lo = mean-qt(0.975, df =n) * sqrt(var) / n,
+    hi = mean+qt(0.975, df =n) * sqrt(var) / n)
+
+library(ggplot2)
+```
+
+```{r, eval=FALSE}
+    b1 = sqrt(4*3/(4+3)) * log(gmean(Ca, Mg, Na, K) / gmean(HCO3, SO4, Cl))
+    b2 = sqrt(2*2/(2+2)) * log(gmean(Ca, Mg) / gmean(Na, K))
+    b3 = sqrt(1*1/(1+1)) * log(Ca/Mg)
+    b4 = sqrt(1*1/(1+1)) * log(Na/K)
+    b5 = sqrt(1*2/(1+2)) * log(gmean(HCO3)/gmean(SO4, Cl))
+    b6 = sqrt(1*1/(1+1)) * log(SO4/Cl)
+```
+
+```{r, fig.width=9, fig.height=5, echo=FALSE}
+ggplot() + 
+  geom_point(data=d.year, aes(x=year, y=mean, col='Year\'s mean'))+
+  geom_errorbar(data=d.year, aes(x=year, ymin=lo, ymax=hi, col='Year\'s mean'))+
+  geom_hline(data=d.global, aes(yintercept=mean, col='Over all mean')) +
+  geom_smooth(data=d %>% subset(year >= YLIMIT), aes(x=year, y=value, col='Loess estimation'), 
+              method='loess', degree=1, span=0.66) + 
+  facet_wrap(~balance, scale='free') +
+  scale_x_continuous(breaks=c(YLIMIT,2000,2005,2010)) + 
+  theme_bw() +
+  theme( legend.title=element_blank(),
+         legend.position = 'top') + 
+  xlab('Year') + ylab('Balance')
+```
+

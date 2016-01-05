@@ -272,13 +272,13 @@ Hash: b08c52dae92a0a11e64a4deea032ec33
 
 Package: mixpack
 Source: github
-Version: 0.3.4
-Hash: 48d8a40f9aa5770496769836b6405839
+Version: 0.3.5
+Hash: 3394f387633befacf2b76e56e02eeb41
 Requires: Rcpp, RcppArmadillo, mvtnorm
 GithubRepo: mixpack
 GithubUsername: mcomas
 GithubRef: master
-GithubSha1: 6382244f066b21cb9b74adc1dcba6fffe71838ae
+GithubSha1: d441bfd2a750b29e49756f909fd2a7e2caefa4c6
 
 Package: munsell
 Source: CRAN

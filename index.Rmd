@@ -1,0 +1,20 @@
+---
+title: "Geowater"
+output: html_document
+---
+
+  * Descriptives [html](descriptives.html). Recovering data [html](recovering.html).
+  * Detection outliers:
+    * Observations with chemical components far from the mean [html](outliers_measurement.html)
+    * Observations with high variances in repeated measurements [html](outliers_wells.html)
+  * Stationarity [html](stationarity.html)
+  * Checking differences between summer and non-summer:
+    * Differences in composition center [html](matched.html)
+    * Differences within each coordinates [html](matched2.html)
+    * Differences with respect distance [html](matching_diff.html)
+  * __Center:__ Locations with repeated measures are replaced by one location with the center
+    * Mixture model [html](mixture_model.html)
+    * Hierarchical merging [html](hierarchical_merging.html)
+  * __Bootstrap approach:__ One observation for each location with repeated measures is randomly chosen
+    * Mixture model [html]( )
+    * Hierarchical merging [html]( )

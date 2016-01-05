@@ -7,7 +7,8 @@ DATA = data/geowater.RData data/geowater_maps.RData data/geowater_dataset.RData 
        $(HIERAR) \
        $(foreach omega,$(OMEGA),$(foreach lambda,$(LAMBDA),$(foreach lvl,$(LVL),$(shell printf 'www/hierarchical_merging_at_level-%s_%s_%02d.html' $(omega) $(lambda) $(lvl)))))
 HTML = www/descriptives.html www/recovering.html www/matched.html www/matched2.html www/matching_diff.html \
-       www/mixture_model.html www/outliers_measurement.html www/outliers_wells.html
+       www/mixture_model.html www/outliers_measurement.html www/outliers_wells.html www/stationarity.html \
+       www/index.html
 
 all: $(DATA) $(HTML)
 
@@ -34,6 +35,9 @@ www/hierarchical_merging_at_level-%.html : hierarchical_merging_at_level.Rmd dat
 www/descriptives.html : descriptives.Rmd data/geowater.RData data/geowater_maps.RData
 	Rscript -e 'rmarkdown::render("$<", output_file="$@")'
 
+www/index.html: index.Rmd
+	Rscript -e 'rmarkdown::render("$<", output_file="$@")'
+
 www/recovering.html : recovering.Rmd data/geowater.RData
 	Rscript -e 'rmarkdown::render("$<", output_file="$@")'
 
@@ -56,4 +60,7 @@ www/outliers_measurement.html : outliers_measurement.Rmd data/geowater.RData dat
 	Rscript -e 'rmarkdown::render("$<", output_file="$@")'
 
 www/outliers_wells.html : outliers_wells.Rmd data/geowater.RData data/geowater_maps.RData
+	Rscript -e 'rmarkdown::render("$<", output_file="$@")'
+
+www/stationarity.html : stationarity.Rmd data/geowater_maps.RData
 	Rscript -e 'rmarkdown::render("$<", output_file="$@")'
